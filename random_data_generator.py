@@ -1,4 +1,5 @@
 import csv
+import os.path
 import random
 import time
 from urllib.parse import urlparse
@@ -7,11 +8,13 @@ from faker import Faker
 
 fake = Faker()
 
-RANKINGS_PER_DOMAIN = 1000000
-TOTAL_DOMAINS = 10
+def generate_rankings(serial_no):
+    if os.path.exists(f'data/rankings_{serial_no}.csv'):
+        print(f'File data/rankings_{serial_no}.csv already exists. Skipping...')
+        return
 
-
-def main():
+    RANKINGS_PER_DOMAIN = 5000000
+    TOTAL_DOMAINS = 10
     # Generate random data for the table
     data = []
     # url = fake.url()
@@ -29,11 +32,15 @@ def main():
             data.append({"domain": domain, "date": date, "url": url, "term": term, "rank": rank, "volume": volume, "cpc": cpc})
 
     # Write the data to a file
-    with open('data/rankings_6.csv', 'w') as f:
+    with open(f'data/rankings_{serial_no}.csv', 'w') as f:
         csv_writer = csv.DictWriter(f, fieldnames=data[0].keys())
         csv_writer.writeheader()
         csv_writer.writerows(data)
 
+def main():
+    for i in range(9, 310):
+        print(f'Generating data/rankings_{i}.csv')
+        generate_rankings(i)
 
 if __name__ == '__main__':
     t1 = time.perf_counter()
