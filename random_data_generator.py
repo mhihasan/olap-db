@@ -39,8 +39,10 @@ def generate_rankings(serial_no):
 
 def main():
     for i in range(9, 310):
+        t1 = time.perf_counter()
         print(f'Generating data/rankings_{i}.csv')
         generate_rankings(i)
+        print(f'Finished in {time.perf_counter() - t1} seconds')
 
 if __name__ == '__main__':
     t1 = time.perf_counter()
