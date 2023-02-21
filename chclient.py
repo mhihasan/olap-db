@@ -16,3 +16,26 @@ async def main():
 if __name__ == '__main__':
     import asyncio
     asyncio.run(main())
+
+"""
+clickhouse-client \
+    --host avw5r4qs3y.us-east-2.aws.clickhouse.cloud \
+    --secure \
+    --port 9440 \
+    --password Myp@ssw0rd \
+    --query "
+    INSERT INTO rankings_v1 
+    SELECT
+        domain,
+        date,
+        url,
+        term,
+        rank, 
+        volume, 
+        cpc 
+    FROM input('id UInt32, type String, author String, timestamp DateTime, comment String, children Array(UInt32)')
+    FORMAT CSV 
+" < comments.tsv
+
+clickhouse-client -q "INSERT INTO rankings_v1 FORMAT CSV" <  data/rankings_1.csv
+"""
