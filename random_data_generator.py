@@ -2,7 +2,7 @@ import csv
 import os.path
 import random
 import time
-from urllib.parse import urlparse
+from concurrent.futures import ProcessPoolExecutor
 
 from faker import Faker
 
@@ -12,6 +12,9 @@ def generate_rankings(serial_no):
     if os.path.exists(f'data/rankings_{serial_no}.csv'):
         print(f'File data/rankings_{serial_no}.csv already exists. Skipping...')
         return
+
+    print(f'Generating data/rankings_{serial_no}.csv')
+    t1 = time.perf_counter()
 
     RANKINGS_PER_DOMAIN = 5000000
     TOTAL_DOMAINS = 10
@@ -37,12 +40,12 @@ def generate_rankings(serial_no):
         csv_writer.writeheader()
         csv_writer.writerows(data)
 
+    print(f'Finished data/rankings_{serial_no}.csv in {time.perf_counter() - t1} seconds')
 def main():
-    for i in range(9, 310):
-        t1 = time.perf_counter()
-        print(f'Generating data/rankings_{i}.csv')
-        generate_rankings(i)
-        print(f'Finished in {time.perf_counter() - t1} seconds')
+    with ProcessPoolExecutor() as executor:
+        executor.map(generate_rankings, range(50, 301))
+
+
 
 if __name__ == '__main__':
     t1 = time.perf_counter()
