@@ -2,7 +2,7 @@ import csv
 import os.path
 import random
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ALL_COMPLETED, wait
 
 from faker import Faker
 
@@ -43,7 +43,8 @@ def generate_rankings(serial_no):
     print(f'Finished data/rankings_{serial_no}.csv in {time.perf_counter() - t1} seconds')
 def main():
     with ProcessPoolExecutor() as executor:
-        executor.map(generate_rankings, range(50, 301))
+        futures = {executor.submit(generate_rankings, i): i for i in range(50, 301)}
+        wait(futures, return_when=ALL_COMPLETED)
 
 
 
