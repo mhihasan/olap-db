@@ -18,7 +18,7 @@ def generate_rankings(serial_no):
     print(f'Generating data/rankings_{serial_no}.csv')
     t1 = time.perf_counter()
 
-    RANKINGS_PER_DOMAIN = 5000000
+    RANKINGS_PER_DOMAIN = 2000000
     TOTAL_DOMAINS = 10
     # Generate random data for the table
     data = []
