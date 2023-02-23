@@ -1,12 +1,14 @@
 import csv
+import itertools
 import os.path
 import random
 import time
-from concurrent.futures import ProcessPoolExecutor, ALL_COMPLETED, wait
+from concurrent.futures import ProcessPoolExecutor,  wait, FIRST_COMPLETED
 
 from faker import Faker
 
 fake = Faker()
+
 
 def generate_rankings(serial_no):
     if os.path.exists(f'data/rankings_{serial_no}.csv'):
@@ -41,11 +43,36 @@ def generate_rankings(serial_no):
         csv_writer.writerows(data)
 
     print(f'Finished data/rankings_{serial_no}.csv in {time.perf_counter() - t1} seconds')
-def main():
-    with ProcessPoolExecutor() as executor:
-        futures = {executor.submit(generate_rankings, i): i for i in range(50, 301)}
-        wait(futures, return_when=ALL_COMPLETED)
 
+
+def run_concurrent_process(fn, input_params, *, max_concurrency):
+    input_params_iter = iter(input_params)
+    total_tasks = len(input_params)
+    total_completed_tasks = 0
+
+    with ProcessPoolExecutor(max_workers=max_concurrency) as executor:
+        futures = {executor.submit(fn, param): param for param in itertools.islice(input_params_iter, max_concurrency)}
+
+        while futures:
+            finished_tasks, _ = wait(futures, return_when=FIRST_COMPLETED)
+
+            for task in finished_tasks:
+                param = futures.pop(task)
+                print("Finished param", param)
+
+            total_completed_tasks += len(finished_tasks)
+            print(
+                f"Completed tasks: {total_completed_tasks}/{total_tasks}, {round(total_completed_tasks * 100 / total_tasks, 2)}%"  # noqa
+            )
+
+            for param in itertools.islice(input_params_iter, len(finished_tasks)):
+                futures[executor.submit(fn, param)] = param
+
+        executor.shutdown()
+
+
+def main():
+    run_concurrent_process(generate_rankings, range(50, 301), max_concurrency=10)
 
 
 if __name__ == '__main__':
