@@ -1,3 +1,8 @@
 aiochclient[aiohttp]
 faker
 gdown
+
+historical_serps_data
+SQLAlchemy==1.4.46
+serp_vault==5.0.26
+python-dotenv

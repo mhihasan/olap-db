@@ -19,7 +19,7 @@ def generate_rankings(serial_no):
     t1 = time.perf_counter()
 
     RANKINGS_PER_DOMAIN = 5000000
-    TOTAL_DOMAINS = 2
+    TOTAL_DOMAINS = 4
     # Generate random data for the table
     data = []
     # url = fake.url()
