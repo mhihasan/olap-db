@@ -179,7 +179,6 @@ def cli():
     parser.add_argument('--locale', type=str, required=True)
 
     args = parser.parse_args()
-    main(args.locale)
     generate_rankings_data2(args.locale)
 
 
