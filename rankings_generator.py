@@ -149,7 +149,6 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
     while True:
         topics = fetch_tracked_topics(locale, page_no, page_size)
-        print("Fetched topics", len(topics))
         if not topics:
             break
 
@@ -166,7 +165,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
         write_to_csv(rankings_data, f'{locale}_rankings_{page_no}.csv')
 
-        print("Finished page", page_no)
+        print(f"{datetime.now().isoformat()}: Finished page", page_no)
         page_no += 1
 
 
