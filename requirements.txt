@@ -1,3 +1,5 @@
+--extra-index-url https://admin:..MM!aws!01..@python.marketmuse.com/pypi
+
 aiochclient[aiohttp]
 faker
 gdown

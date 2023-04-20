@@ -21,7 +21,7 @@ from faker import Faker
 
 fake = Faker()
 
-DEFAULT_PAGE_SIZE = 50000
+DEFAULT_PAGE_SIZE = 10000
 
 import itertools
 from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
@@ -111,7 +111,9 @@ def rankings_to_clickhouse_schema(term, serps):
 
 
 def write_to_csv(data, filename):
-    with open(filename, 'w') as f:
+    file_path = os.path.join(os.path.dirname(__file__), f'rankings_data/{filename}')
+
+    with open(file_path, 'w') as f:
         csv_writer = csv.DictWriter(f, fieldnames=data[0].keys())
         csv_writer.writeheader()
         csv_writer.writerows(data)
@@ -142,6 +144,32 @@ def generate_rankings_data(params):
     write_to_csv(rankings_data, f'{locale}_rankings_{page_no}.csv')
 
 
+def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
+    serp_query = SerpQuery()
+
+    while True:
+        topics = fetch_tracked_topics(locale, page_no, page_size)
+        print("Fetched topics", len(topics))
+        if not topics:
+            break
+
+        rankings_data = []
+
+        for chunk in _chunkify(topics, 100):
+            terms = [t.topic for t in chunk]
+
+            loop = asyncio.get_event_loop()
+            response = loop.run_until_complete(serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings']))
+
+            for topic, serps in response.items():
+                rankings_data.extend(rankings_to_clickhouse_schema(topic, serps))
+
+        write_to_csv(rankings_data, f'{locale}_rankings_{page_no}.csv')
+
+        print("Finished page", page_no)
+        page_no += 1
+
+
 def main(locale):
     pages = [{'locale': locale, 'page_no': i} for i in list(range(1, 100))]
     run_concurrent_process(generate_rankings_data, pages, max_concurrency=10)
@@ -153,7 +181,10 @@ def cli():
 
     args = parser.parse_args()
     main(args.locale)
+    generate_rankings_data2(args.locale)
 
 
 if __name__ == '__main__':
+    # main('en-us')
     cli()
+    # generate_rankings_data2('en-us')
