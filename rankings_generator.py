@@ -7,6 +7,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
+from serp_vault.responses import Serps
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
@@ -144,8 +145,15 @@ def generate_rankings_data(params):
     write_to_csv(rankings_data, f'{locale}_rankings_{page_no}.csv')
 
 
+async def get_serps(serp_query, terms, locale):
+    try:
+        return await serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings'])
+    except Exception as e:
+        return Serps()
+
 def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
     serp_query = SerpQuery()
+    loop = asyncio.get_event_loop()
 
     while True:
         topics = fetch_tracked_topics(locale, page_no, page_size)
@@ -157,8 +165,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
         for chunk in _chunkify(topics, 100):
             terms = [t.topic for t in chunk]
 
-            loop = asyncio.get_event_loop()
-            response = loop.run_until_complete(serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings']))
+            response = loop.run_until_complete(get_serps(serp_query, terms, locale))
 
             for topic, serps in response.items():
                 rankings_data.extend(rankings_to_clickhouse_schema(topic, serps))
