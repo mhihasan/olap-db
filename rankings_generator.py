@@ -84,6 +84,9 @@ def rankings_to_clickhouse_schema(term, serps):
     volume: Uint32,
     cpc: UFloat
     """
+    if serps is None:
+        return []
+
     date = datetime.fromtimestamp(int(serps.timestamp)).date().strftime('%Y-%m-%d')
     data = []
     for ranking in (serps.rankings or []):
@@ -149,7 +152,7 @@ async def get_serps(serp_query, terms, locale):
     try:
         return await serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings'])
     except Exception as e:
-        return Serps()
+        return {}
 
 def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
     serp_query = SerpQuery()
