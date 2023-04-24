@@ -160,7 +160,6 @@ async def get_serps(serp_query, terms, locale):
 
 def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
     serp_query = SerpQuery()
-    loop = asyncio.get_event_loop()
 
     while True:
         topics = fetch_tracked_topics(locale, page_no, page_size)
