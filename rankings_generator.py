@@ -143,9 +143,14 @@ def generate_rankings_data(params):
         response = loop.run_until_complete(serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings']))
 
         for topic, serps in response.items():
-            rankings_data.extend(rankings_to_clickhouse_schema(topic, serps))
+            data = rankings_to_clickhouse_schema(topic, serps)
+            if data:
+                rankings_data.extend(data)
 
-    write_to_csv(rankings_data, f'{locale}_rankings_{page_no}.csv')
+    if rankings_data:
+        write_to_csv(rankings_data, f'{locale}_rankings_{page_no}.csv')
+    else:
+        print(f'No data found for locale {locale} page {page_no}')
 
 
 async def get_serps(serp_query, terms, locale):
