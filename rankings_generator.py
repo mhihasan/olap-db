@@ -3,6 +3,7 @@ import asyncio
 import csv
 import os
 import random
+import time
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -194,7 +195,9 @@ def cli():
     parser.add_argument('--locale', type=str, required=True)
 
     args = parser.parse_args()
+    t1 = time.perf_counter()
     generate_rankings_data2(args.locale)
+    print(f"Finished in {time.perf_counter() - t1} seconds")
 
 
 if __name__ == '__main__':
