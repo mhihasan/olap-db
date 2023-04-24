@@ -193,10 +193,12 @@ def main(locale):
 def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument('--locale', type=str, required=True)
+    parser.add_argument('--page_no', type=int, default=1)
+    parser.add_argument('--page_size', type=int, default=DEFAULT_PAGE_SIZE)
 
     args = parser.parse_args()
     t1 = time.perf_counter()
-    generate_rankings_data2(args.locale)
+    generate_rankings_data2(locale=args.locale, page_no=args.page_no, page_size=args.page_size)
     print(f"Finished in {time.perf_counter() - t1} seconds")
 
 
