@@ -7,7 +7,6 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
-from serp_vault.responses import Serps
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
@@ -173,7 +172,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
         for chunk in _chunkify(topics, 100):
             terms = [t.topic for t in chunk]
 
-            response = loop.run_until_complete(get_serps(serp_query, terms, locale))
+            response = asyncio.run(get_serps(serp_query, terms, locale))
 
             for topic, serps in response.items():
                 rankings_data.extend(rankings_to_clickhouse_schema(topic, serps))
@@ -200,4 +199,4 @@ def cli():
 if __name__ == '__main__':
     # main('en-us')
     cli()
-    # generate_rankings_data2('en-us')
+    # generate_rankings_data2('en-ca')
