@@ -21,7 +21,7 @@ from faker import Faker
 
 fake = Faker()
 
-DEFAULT_PAGE_SIZE = 10000
+DEFAULT_PAGE_SIZE = 10
 
 import itertools
 from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
@@ -138,8 +138,7 @@ def generate_rankings_data(params):
     for chunk in _chunkify(topics, 100):
         terms = [t.topic for t in chunk]
 
-        loop = asyncio.get_event_loop()
-        response = loop.run_until_complete(serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings']))
+        response = asyncio.run(serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings']))
 
         for topic, serps in response.items():
             data = rankings_to_clickhouse_schema(topic, serps)
@@ -174,9 +173,12 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
             response = asyncio.run(get_serps(serp_query, terms, locale))
 
             for topic, serps in response.items():
-                rankings_data.extend(rankings_to_clickhouse_schema(topic, serps))
+                data = rankings_to_clickhouse_schema(topic, serps)
+                if data:
+                    rankings_data.extend(data)
 
-        write_to_csv(rankings_data, f'{locale}_rankings_{page_no}.csv')
+        if rankings_data:
+            write_to_csv(rankings_data, f'rankings_{locale}_{page_no}.csv')
 
         print(f"{datetime.now().isoformat()}: Finished page", page_no)
         page_no += 1
