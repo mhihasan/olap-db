@@ -68,7 +68,7 @@ def fetch_tracked_topics(locale, page_no, page_size):
         query = (
             select(TopicsToSchedule)
             .where(TopicsToSchedule.tracked == True)
-            .order_by(desc(TopicsToSchedule.last_time_scheduled))
+            .order_by(desc(TopicsToSchedule.last_update_timestamp))
             .limit(page_size)
             .offset(offset)
         )
@@ -225,5 +225,5 @@ def cli():
 
 if __name__ == "__main__":
     # main('en-us')
-    cli()
-    # generate_rankings_data2('en-au')
+    # cli()
+    generate_rankings_data2('en-au')
