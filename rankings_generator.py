@@ -13,7 +13,7 @@ dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
 
 from serp_vault.serp_query import SerpQuery
-from sqlalchemy import select
+from sqlalchemy import select, desc
 
 from historical_serps_data.models import TopicsToSchedule
 from historical_serps_data.session import historical_serps_session_maker
@@ -34,7 +34,10 @@ def run_concurrent_process(fn, input_params, *, max_concurrency):
     total_completed_tasks = 0
 
     with ProcessPoolExecutor(max_workers=max_concurrency) as executor:
-        futures = {executor.submit(fn, param): param for param in itertools.islice(input_params_iter, max_concurrency)}
+        futures = {
+            executor.submit(fn, param): param
+            for param in itertools.islice(input_params_iter, max_concurrency)
+        }
 
         while futures:
             finished_tasks, _ = wait(futures, return_when=FIRST_COMPLETED)
@@ -62,14 +65,20 @@ def fetch_tracked_topics(locale, page_no, page_size):
     offset = (page_no - 1) * page_size
     HsDataSession = get_hs_session(locale)
     with HsDataSession() as session:
-        query = select(TopicsToSchedule).where(TopicsToSchedule.tracked==True).limit(page_size).offset(offset)
+        query = (
+            select(TopicsToSchedule)
+            .where(TopicsToSchedule.tracked == True)
+            .order_by(desc(TopicsToSchedule.last_time_scheduled))
+            .limit(page_size)
+            .offset(offset)
+        )
         return session.execute(query).scalars().all()
 
 
 def url_to_domain(url):
     domain_with_www = urlparse(url).netloc
-    if domain_with_www.startswith('www'):
-        return domain_with_www.split('.', 1)[1]
+    if domain_with_www.startswith("www"):
+        return domain_with_www.split(".", 1)[1]
 
     return domain_with_www
 
@@ -87,11 +96,11 @@ def rankings_to_clickhouse_schema(term, serps):
     if serps is None:
         return []
 
-    date = datetime.fromtimestamp(int(serps.timestamp)).date().strftime('%Y-%m-%d')
+    date = datetime.fromtimestamp(int(serps.timestamp)).date().strftime("%Y-%m-%d")
     data = []
-    for ranking in (serps.rankings or []):
-        url = ranking.get('url')
-        rank = ranking.get('position')
+    for ranking in serps.rankings or []:
+        url = ranking.get("url")
+        rank = ranking.get("position")
 
         if url is None or rank is None:
             continue
@@ -101,36 +110,38 @@ def rankings_to_clickhouse_schema(term, serps):
         volume = fake.pyint(min_value=10, max_value=50000000, step=10)
         cpc = round(random.uniform(0, 10), 2)
 
-        data.append({
-            'domain': domain,
-            'date': date,
-            'term': term,
-            'url': url,
-            'rank': rank,
-            'volume': volume,
-            'cpc': cpc
-        })
+        data.append(
+            {
+                "domain": domain,
+                "date": date,
+                "term": term,
+                "url": url,
+                "rank": rank,
+                "volume": volume,
+                "cpc": cpc,
+            }
+        )
 
     return data
 
 
 def write_to_csv(data, filename):
-    file_path = os.path.join(os.path.dirname(__file__), f'rankings_data/{filename}')
+    file_path = os.path.join(os.path.dirname(__file__), f"rankings_data/{filename}")
 
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         csv_writer = csv.DictWriter(f, fieldnames=data[0].keys())
         csv_writer.writeheader()
         csv_writer.writerows(data)
 
 
 def _chunkify(arr, n):
-    return [arr[i: i + n] for i in range(0, len(arr), n)]
+    return [arr[i : i + n] for i in range(0, len(arr), n)]
 
 
 def generate_rankings_data(params):
-    locale = params.get('locale')
-    page_no = params.get('page_no')
-    page_size = params.get('page_size', DEFAULT_PAGE_SIZE)
+    locale = params.get("locale")
+    page_no = params.get("page_no")
+    page_size = params.get("page_size", DEFAULT_PAGE_SIZE)
     topics = fetch_tracked_topics(locale, page_no, page_size)
     serp_query = SerpQuery()
 
@@ -139,7 +150,9 @@ def generate_rankings_data(params):
     for chunk in _chunkify(topics, 100):
         terms = [t.topic for t in chunk]
 
-        response = asyncio.run(serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings']))
+        response = asyncio.run(
+            serp_query.get_recent_serps(topics=terms, locale=locale, fetch=["rankings"])
+        )
 
         for topic, serps in response.items():
             data = rankings_to_clickhouse_schema(topic, serps)
@@ -147,17 +160,20 @@ def generate_rankings_data(params):
                 rankings_data.extend(data)
 
     if rankings_data:
-        write_to_csv(rankings_data, f'{locale}_rankings_{page_no}.csv')
+        write_to_csv(rankings_data, f"{locale}_rankings_{page_no}.csv")
     else:
-        print(f'No data found for locale {locale} page {page_no}')
+        print(f"No data found for locale {locale} page {page_no}")
 
 
 async def get_serps(serp_query, terms, locale):
     try:
-        return await serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings'])
+        return await serp_query.get_recent_serps(
+            topics=terms, locale=locale, fetch=["rankings"]
+        )
     except Exception as e:
-        print(f'Error while fetching serps for {terms}: {e}')
+        print(f"Error while fetching serps for {terms}: {e}")
         return {}
+
 
 def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
     serp_query = SerpQuery()
@@ -180,32 +196,34 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
                     rankings_data.extend(data)
 
         if rankings_data:
-            write_to_csv(rankings_data, f'rankings_{locale}_{page_no}.csv')
+            write_to_csv(rankings_data, f"rankings_{locale}_{page_no}.csv")
             print(f"{datetime.now().isoformat()}: Finished page", page_no)
         else:
-            print(f'No data found for locale {locale} page {page_no}')
+            print(f"No data found for locale {locale} page {page_no}")
 
         page_no += 1
 
 
 def main(locale):
-    pages = [{'locale': locale, 'page_no': i} for i in list(range(1, 100))]
+    pages = [{"locale": locale, "page_no": i} for i in list(range(1, 100))]
     run_concurrent_process(generate_rankings_data, pages, max_concurrency=10)
 
 
 def cli():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--locale', type=str, required=True)
-    parser.add_argument('--page_no', type=int, default=1)
-    parser.add_argument('--page_size', type=int, default=DEFAULT_PAGE_SIZE)
+    parser.add_argument("--locale", type=str, required=True)
+    parser.add_argument("--page_no", type=int, default=1)
+    parser.add_argument("--page_size", type=int, default=DEFAULT_PAGE_SIZE)
 
     args = parser.parse_args()
     t1 = time.perf_counter()
-    generate_rankings_data2(locale=args.locale, page_no=args.page_no, page_size=args.page_size)
+    generate_rankings_data2(
+        locale=args.locale, page_no=args.page_no, page_size=args.page_size
+    )
     print(f"Finished in {time.perf_counter() - t1} seconds")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # main('en-us')
     cli()
     # generate_rankings_data2('en-au')
