@@ -156,6 +156,7 @@ async def get_serps(serp_query, terms, locale):
     try:
         return await serp_query.get_recent_serps(topics=terms, locale=locale, fetch=['rankings'])
     except Exception as e:
+        print(f'Error while fetching serps for {terms}: {e}')
         return {}
 
 def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
@@ -207,4 +208,4 @@ def cli():
 if __name__ == '__main__':
     # main('en-us')
     cli()
-    # generate_rankings_data2('en-ca')
+    # generate_rankings_data2('en-au')
