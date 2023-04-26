@@ -186,6 +186,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
     while True:
         topics = fetch_tracked_topics(locale, page_no, page_size)
+        print("topic", len(topics))
         if not topics:
             break
 
@@ -232,4 +233,4 @@ def cli():
 if __name__ == "__main__":
     # main('en-us')
     cli()
-    # generate_rankings_data2('en-au')
+    # generate_rankings_data2('en-us')
