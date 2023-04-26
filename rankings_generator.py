@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
+
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
 
@@ -16,6 +17,7 @@ from serp_vault.serp_query import SerpQuery
 from sqlalchemy import select, desc
 
 from historical_serps_data.models import TopicsToSchedule
+from historical_serps_data.models.enums import TopicStatusEnum
 from historical_serps_data.session import historical_serps_session_maker
 
 from faker import Faker
@@ -28,7 +30,7 @@ import itertools
 from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
 
 
-def log(message):
+def log(*message):
     log(f'{datetime.now().isoformat()}: {message}')
 
 
@@ -71,7 +73,7 @@ def fetch_tracked_topics(locale, page_no, page_size):
     with HsDataSession() as session:
         query = (
             select(TopicsToSchedule)
-            .where(TopicsToSchedule.tracked == True)
+            .where(TopicsToSchedule.status == TopicStatusEnum.processed.name, TopicsToSchedule.tracked == True)
             .order_by(desc(TopicsToSchedule.last_update_timestamp))
             .limit(page_size)
             .offset(offset)
