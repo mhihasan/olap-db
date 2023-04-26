@@ -28,6 +28,10 @@ import itertools
 from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
 
 
+def log(message):
+    log(f'{datetime.now().isoformat()}: {message}')
+
+
 def run_concurrent_process(fn, input_params, *, max_concurrency):
     input_params_iter = iter(input_params)
     total_tasks = len(input_params)
@@ -44,10 +48,10 @@ def run_concurrent_process(fn, input_params, *, max_concurrency):
 
             for task in finished_tasks:
                 param = futures.pop(task)
-                print("Finished param", param)
+                log("Finished param", param)
 
             total_completed_tasks += len(finished_tasks)
-            print(
+            log(
                 f"Completed tasks: {total_completed_tasks}/{total_tasks}, {round(total_completed_tasks * 100 / total_tasks, 2)}%"  # noqa
             )
 
@@ -162,7 +166,7 @@ def generate_rankings_data(params):
     if rankings_data:
         write_to_csv(rankings_data, f"{locale}_rankings_{page_no}.csv")
     else:
-        print(f"No data found for locale {locale} page {page_no}")
+        log(f"No data found for locale {locale} page {page_no}")
 
 
 async def get_serps(serp_query, terms, locale):
@@ -171,7 +175,7 @@ async def get_serps(serp_query, terms, locale):
             topics=terms, locale=locale, fetch=["rankings"]
         )
     except Exception as e:
-        print(f"Error while fetching serps for {terms}: {e}")
+        log(f"Error while fetching serps for {terms}: {e}")
         return {}
 
 
@@ -197,9 +201,9 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
         if rankings_data:
             write_to_csv(rankings_data, f"rankings_{locale}_{page_no}.csv")
-            print(f"{datetime.now().isoformat()}: Finished page", page_no)
+            log(f"{datetime.now().isoformat()}: Finished page", page_no)
         else:
-            print(f"No data found for locale {locale} page {page_no}")
+            log(f"No data found for locale {locale} page {page_no}")
 
         page_no += 1
 
@@ -220,10 +224,10 @@ def cli():
     generate_rankings_data2(
         locale=args.locale, page_no=args.page_no, page_size=args.page_size
     )
-    print(f"Finished in {time.perf_counter() - t1} seconds")
+    log(f"Finished in {time.perf_counter() - t1} seconds")
 
 
 if __name__ == "__main__":
     # main('en-us')
-    # cli()
-    generate_rankings_data2('en-au')
+    cli()
+    # generate_rankings_data2('en-au')
