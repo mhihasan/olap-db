@@ -144,31 +144,31 @@ def _chunkify(arr, n):
     return [arr[i : i + n] for i in range(0, len(arr), n)]
 
 
-def generate_rankings_data(params):
-    locale = params.get("locale")
-    page_no = params.get("page_no")
-    page_size = params.get("page_size", DEFAULT_PAGE_SIZE)
-    topics = fetch_tracked_topics(locale, page_no, page_size)
-    serp_query = SerpQuery()
-
-    rankings_data = []
-
-    for chunk in _chunkify(topics, 10):
-        terms = [t.topic for t in chunk]
-
-        response = asyncio.run(
-            serp_query.get_recent_serps(topics=terms, locale=locale, fetch=["rankings"])
-        )
-
-        for topic, serps in response.items():
-            data = rankings_to_clickhouse_schema(topic, serps)
-            if data:
-                rankings_data.extend(data)
-
-    if rankings_data:
-        write_to_csv(rankings_data, f"{locale}_rankings_{page_no}.csv")
-    else:
-        log(f"No data found for locale {locale} page {page_no}")
+# def generate_rankings_data(params):
+#     locale = params.get("locale")
+#     page_no = params.get("page_no")
+#     page_size = params.get("page_size", DEFAULT_PAGE_SIZE)
+#     topics = fetch_tracked_topics(locale, page_no, page_size)
+#     serp_query = SerpQuery()
+#
+#     rankings_data = []
+#
+#     for chunk in _chunkify(topics, 10):
+#         terms = [t.topic for t in chunk]
+#
+#         response = asyncio.run(
+#             serp_query.get_recent_serps(topics=terms, locale=locale, fetch=["rankings"])
+#         )
+#
+#         for topic, serps in response.items():
+#             data = rankings_to_clickhouse_schema(topic, serps)
+#             if data:
+#                 rankings_data.extend(data)
+#
+#     if rankings_data:
+#         write_to_csv(rankings_data, f"{locale}_rankings_{page_no}.csv")
+#     else:
+#         log(f"No data found for locale {locale} page {page_no}")
 
 
 async def get_serps(serp_query, terms, locale):
@@ -192,7 +192,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
         rankings_data = []
 
-        for chunk in _chunkify(topics, 100):
+        for chunk in _chunkify(topics, 10):
             response = asyncio.run(get_serps(serp_query, chunk, locale))
 
             for topic, serps in response.items():
