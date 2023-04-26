@@ -24,7 +24,7 @@ from faker import Faker
 
 fake = Faker()
 
-DEFAULT_PAGE_SIZE = 10000
+DEFAULT_PAGE_SIZE = 1000
 
 import itertools
 from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
