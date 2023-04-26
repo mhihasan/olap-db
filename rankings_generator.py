@@ -153,7 +153,7 @@ def generate_rankings_data(params):
 
     rankings_data = []
 
-    for chunk in _chunkify(topics, 100):
+    for chunk in _chunkify(topics, 10):
         terms = [t.topic for t in chunk]
 
         response = asyncio.run(
