@@ -72,7 +72,7 @@ def fetch_tracked_topics(locale, page_no, page_size):
     HsDataSession = get_hs_session(locale)
     with HsDataSession() as session:
         query = (
-            select(TopicsToSchedule)
+            select(TopicsToSchedule.topic)
             .where(TopicsToSchedule.status == TopicStatusEnum.processed.name, TopicsToSchedule.tracked == True)
             .order_by(desc(TopicsToSchedule.last_update_timestamp))
             .limit(page_size)
@@ -193,9 +193,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
         rankings_data = []
 
         for chunk in _chunkify(topics, 100):
-            terms = [t.topic for t in chunk]
-
-            response = asyncio.run(get_serps(serp_query, terms, locale))
+            response = asyncio.run(get_serps(serp_query, chunk, locale))
 
             for topic, serps in response.items():
                 data = rankings_to_clickhouse_schema(topic, serps)
