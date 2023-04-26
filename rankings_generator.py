@@ -26,41 +26,41 @@ fake = Faker()
 
 DEFAULT_PAGE_SIZE = 1000
 
-import itertools
-from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
+# import itertools
+# from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
 
 
 def log(*message):
     log(f'{datetime.now().isoformat()}: {message}')
 
 
-def run_concurrent_process(fn, input_params, *, max_concurrency):
-    input_params_iter = iter(input_params)
-    total_tasks = len(input_params)
-    total_completed_tasks = 0
-
-    with ProcessPoolExecutor(max_workers=max_concurrency) as executor:
-        futures = {
-            executor.submit(fn, param): param
-            for param in itertools.islice(input_params_iter, max_concurrency)
-        }
-
-        while futures:
-            finished_tasks, _ = wait(futures, return_when=FIRST_COMPLETED)
-
-            for task in finished_tasks:
-                param = futures.pop(task)
-                log("Finished param", param)
-
-            total_completed_tasks += len(finished_tasks)
-            log(
-                f"Completed tasks: {total_completed_tasks}/{total_tasks}, {round(total_completed_tasks * 100 / total_tasks, 2)}%"  # noqa
-            )
-
-            for param in itertools.islice(input_params_iter, len(finished_tasks)):
-                futures[executor.submit(fn, param)] = param
-
-        executor.shutdown()
+# def run_concurrent_process(fn, input_params, *, max_concurrency):
+#     input_params_iter = iter(input_params)
+#     total_tasks = len(input_params)
+#     total_completed_tasks = 0
+#
+#     with ProcessPoolExecutor(max_workers=max_concurrency) as executor:
+#         futures = {
+#             executor.submit(fn, param): param
+#             for param in itertools.islice(input_params_iter, max_concurrency)
+#         }
+#
+#         while futures:
+#             finished_tasks, _ = wait(futures, return_when=FIRST_COMPLETED)
+#
+#             for task in finished_tasks:
+#                 param = futures.pop(task)
+#                 log("Finished param", param)
+#
+#             total_completed_tasks += len(finished_tasks)
+#             log(
+#                 f"Completed tasks: {total_completed_tasks}/{total_tasks}, {round(total_completed_tasks * 100 / total_tasks, 2)}%"  # noqa
+#             )
+#
+#             for param in itertools.islice(input_params_iter, len(finished_tasks)):
+#                 futures[executor.submit(fn, param)] = param
+#
+#         executor.shutdown()
 
 
 def get_hs_session(locale):
@@ -104,7 +104,7 @@ def rankings_to_clickhouse_schema(term, serps):
 
     date = datetime.fromtimestamp(int(serps.timestamp)).date().strftime("%Y-%m-%d")
     data = []
-    for ranking in serps.rankings or []:
+    for ranking in (serps.rankings or []):
         url = ranking.get("url")
         rank = ranking.get("position")
 
@@ -171,7 +171,8 @@ def _chunkify(arr, n):
 #         log(f"No data found for locale {locale} page {page_no}")
 
 
-async def get_serps(serp_query, terms, locale):
+async def get_serps(terms, locale):
+    serp_query = SerpQuery()
     try:
         return await serp_query.get_recent_serps(
             topics=terms, locale=locale, fetch=["rankings"]
@@ -193,7 +194,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
         rankings_data = []
 
         for chunk in _chunkify(topics, 10):
-            response = asyncio.run(get_serps(serp_query, chunk, locale))
+            response = asyncio.run(get_serps(chunk, locale))
 
             for topic, serps in response.items():
                 data = rankings_to_clickhouse_schema(topic, serps)
@@ -209,9 +210,9 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
         page_no += 1
 
 
-def main(locale):
-    pages = [{"locale": locale, "page_no": i} for i in list(range(1, 100))]
-    run_concurrent_process(generate_rankings_data, pages, max_concurrency=10)
+# def main(locale):
+#     pages = [{"locale": locale, "page_no": i} for i in list(range(1, 100))]
+#     run_concurrent_process(generate_rankings_data, pages, max_concurrency=10)
 
 
 def cli():
