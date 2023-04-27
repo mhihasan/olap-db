@@ -236,8 +236,5 @@ def cli():
 
 if __name__ == "__main__":
     # main('en-us')
-    # cli()
-    locale = 'en-nz'
-    if not os.path.exists(f"rankings_data_{locale}"):
-        os.mkdir(f"rankings_data_{locale}")
+    cli()
     # generate_rankings_data2('en-ca')
