@@ -183,11 +183,9 @@ async def get_serps(terms, locale):
 
 
 def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
-    serp_query = SerpQuery()
-
     while True:
         topics = fetch_tracked_topics(locale, page_no, page_size)
-        print("topics fetched", len(topics))
+        log("topics fetched", len(topics))
         if not topics:
             break
 
@@ -195,9 +193,12 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
         for chunk in _chunkify(topics, 10):
             response = asyncio.run(get_serps(chunk, locale))
+            log(f"Found serps for {len(response)} topics")
 
             for topic, serps in response.items():
                 data = rankings_to_clickhouse_schema(topic, serps)
+                log(f'Generate {len(data)} rankings for {topic}')
+
                 if data:
                     rankings_data.extend(data)
 
