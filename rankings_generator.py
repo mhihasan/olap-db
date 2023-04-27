@@ -25,6 +25,7 @@ from faker import Faker
 fake = Faker()
 
 DEFAULT_PAGE_SIZE = 1000
+SERP_FETCHING_CONCURRENCY = 100
 
 # import itertools
 # from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
@@ -191,9 +192,8 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
         rankings_data = []
 
-        for chunk in _chunkify(topics, 10):
+        for chunk in _chunkify(topics, SERP_FETCHING_CONCURRENCY):
             response = asyncio.run(get_serps(chunk, locale))
-            log(f"Found serps for {len(response)} topics")
 
             for topic, serps in response.items():
                 data = rankings_to_clickhouse_schema(topic, serps)
