@@ -204,7 +204,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
         if rankings_data:
             write_to_csv(rankings_data, f"rankings_{locale}_{page_no}.csv")
-            log(f"{datetime.now().isoformat()}: Finished page", page_no)
+            log(f"Finished page {page_no}")
         else:
             log(f"No data found for locale {locale} page {page_no}")
 
