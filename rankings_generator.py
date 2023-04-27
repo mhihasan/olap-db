@@ -24,7 +24,7 @@ from faker import Faker
 
 fake = Faker()
 
-DEFAULT_PAGE_SIZE = 1000
+DEFAULT_PAGE_SIZE = 10000
 SERP_FETCHING_CONCURRENCY = 100
 
 # import itertools
@@ -233,4 +233,4 @@ def cli():
 if __name__ == "__main__":
     # main('en-us')
     cli()
-    # generate_rankings_data2('en-us')
+    # generate_rankings_data2('en-ca')
