@@ -24,7 +24,7 @@ from faker import Faker
 
 fake = Faker()
 
-DEFAULT_PAGE_SIZE = 10000
+DEFAULT_PAGE_SIZE = 20000
 SERP_FETCHING_CONCURRENCY = 100
 
 # import itertools
