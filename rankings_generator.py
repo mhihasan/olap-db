@@ -31,7 +31,7 @@ DEFAULT_PAGE_SIZE = 1000
 
 
 def log(*message):
-    log(f'{datetime.now().isoformat()}: {message}')
+    print(f'{datetime.now().isoformat()}: {message}')
 
 
 # def run_concurrent_process(fn, input_params, *, max_concurrency):
@@ -185,7 +185,7 @@ async def get_serps(terms, locale):
 def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
     while True:
         topics = fetch_tracked_topics(locale, page_no, page_size)
-        log("topics fetched", len(topics))
+        log(f"topics fetched {len(topics)}")
         if not topics:
             break
 
