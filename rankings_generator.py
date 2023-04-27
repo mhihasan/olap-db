@@ -133,7 +133,7 @@ def rankings_to_clickhouse_schema(term, serps):
 
 
 def write_to_csv(data, filename):
-    file_path = os.path.join(os.path.dirname(__file__), f"rankings_data/{filename}")
+    file_path = os.path.join(os.path.dirname(__file__), filename)
 
     with open(file_path, "w") as f:
         csv_writer = csv.DictWriter(f, fieldnames=data[0].keys())
@@ -203,7 +203,11 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
                     rankings_data.extend(data)
 
         if rankings_data:
-            write_to_csv(rankings_data, f"rankings_{locale}_{page_no}.csv")
+            parent_dir = f'rankings_data_{locale}'
+            if not os.path.exists(parent_dir):
+                os.mkdir(parent_dir)
+
+            write_to_csv(rankings_data, f"{parent_dir}/rankings_{locale}_{page_no}.csv")
             log(f"Finished page {page_no}")
         else:
             log(f"No data found for locale {locale} page {page_no}")
@@ -232,5 +236,8 @@ def cli():
 
 if __name__ == "__main__":
     # main('en-us')
-    cli()
+    # cli()
+    locale = 'en-nz'
+    if not os.path.exists(f"rankings_data_{locale}"):
+        os.mkdir(f"rankings_data_{locale}")
     # generate_rankings_data2('en-ca')
