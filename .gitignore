@@ -3,4 +3,4 @@ data
 .env
 *.log
 .git
-rankings_data
+rankings_data_*
