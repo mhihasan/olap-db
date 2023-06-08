@@ -10,15 +10,6 @@ services:
     volumes:
       - ch_data:/var/lib/clickhouse
       - ch_log:/val/log/clickhouse-server
-      - type: bind
-        read_only: true
-        source: ./config.d/custom_config.xml
-        target: /etc/clickhouse-server/config.d/custom_config.xml
-    environment:
-      # This limits Clickhouse's memory to 30% of the host memory
-      # If you have high volume and your search return incomplete results
-      # You might want to change this to a higher value (and ensure your host has enough memory)
-      MAX_MEMORY_USAGE_RATIO: 0.3
     ports:
       - "8123:8123"
       - "9000:9000"
