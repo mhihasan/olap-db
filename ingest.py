@@ -40,10 +40,10 @@ def cli():
 
 if __name__ == '__main__':
     with open('ingest.sh', 'w+') as file_writer:
-        file_writer.write("#!/usr/bin/env bash")
-        file_writer.write("set -e")
+        file_writer.write("#!/usr/bin/env bash\n")
+        file_writer.write("set -e\n")
         folder_names = ['rankings_data_en-us', 'rankings_data_en-uk', 'rankings_data']
         for folder_name in folder_names:
             files = os.listdir(folder_name)
             for f in files:
-                file_writer.write(f'docker-compose run clickhouse-server clickhouse-client -d {DB_NAME} -h clickhouse-server -q "INSERT INTO {TABLE_NAME} FORMAT CSV" < {folder_name}/{f}')
+                file_writer.write(f'docker-compose run clickhouse-server clickhouse-client -d {DB_NAME} -h clickhouse-server -q "INSERT INTO {TABLE_NAME} FORMAT CSV" < {folder_name}/{f}\n')
