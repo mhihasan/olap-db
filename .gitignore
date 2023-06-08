@@ -5,3 +5,4 @@ data
 .git
 rankings_data**
 rankings_data/**
+__pycache__
