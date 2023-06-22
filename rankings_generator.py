@@ -1,12 +1,14 @@
 import argparse
 import asyncio
 import csv
+import dataclasses
 import os
 import random
 import time
 from datetime import datetime
-from urllib.parse import urlparse
+from typing import List
 
+import tldextract
 from dotenv import load_dotenv
 
 
@@ -29,6 +31,50 @@ SERP_FETCHING_CONCURRENCY = 100
 
 # import itertools
 # from concurrent.futures import FIRST_COMPLETED, wait, ProcessPoolExecutor
+
+
+SERP_FEATURES = (
+    "bottom_ads",
+    "featured_snippet",
+    "image_pack",
+    "knowledge_card",
+    "knowledge_panel",
+    "local_pack",
+    "news_box",
+    "organic",
+    "related_questions",
+    "related_searches",
+    "reviews",
+    "shopping_results",
+    "site_links",
+    "spelling",
+    "top_ads",
+    "twitter",
+    "videos",
+    "jobs_pack",
+    "recipes",
+    "popular_products"
+)
+
+
+@dataclasses.dataclass
+class Ranking:
+    domain: str
+    subdomain: str
+    date: str
+    url_bone: str
+    url: str
+    term: str
+    rank: int
+    volume: int
+    cpc: float  # cpc = round(random.uniform(0, 10), 2)
+    competition: float  # between 0 and 1
+    category_strings: List[str]
+    mm_difficulty: float
+    traffic: float
+    traffic_pct: float
+    serp_features: List[str]
+    results_count: int
 
 
 def log(*message):
@@ -71,10 +117,11 @@ def get_hs_session(locale):
 def fetch_tracked_topics(locale, page_no, page_size):
     offset = (page_no - 1) * page_size
     HsDataSession = get_hs_session(locale)
+    ts = 1678887190  # 2023-03-15 13:33:10
     with HsDataSession() as session:
         query = (
             select(TopicsToSchedule.topic)
-            .where(TopicsToSchedule.status == TopicStatusEnum.processed.name, TopicsToSchedule.tracked == True)
+            .where(TopicsToSchedule.status == TopicStatusEnum.processed.name, TopicsToSchedule.last_update_timestamp > ts, TopicsToSchedule.tracked == True)
             .order_by(desc(TopicsToSchedule.last_update_timestamp))
             .limit(page_size)
             .offset(offset)
@@ -82,12 +129,14 @@ def fetch_tracked_topics(locale, page_no, page_size):
         return session.execute(query).scalars().all()
 
 
-def url_to_domain(url):
-    domain_with_www = urlparse(url).netloc
-    if domain_with_www.startswith("www"):
-        return domain_with_www.split(".", 1)[1]
-
-    return domain_with_www
+def get_url_bone(url: str) -> str:
+    prefixes = ("https://www.", "https://", "http://www.", "http://",)
+    for prefix in prefixes:
+        if url.lower().startswith(prefix):
+            url = url[len(prefix):]
+    if url.endswith("/"):
+        url = url[0:-1]
+    return url
 
 
 def rankings_to_clickhouse_schema(term, serps):
@@ -112,22 +161,41 @@ def rankings_to_clickhouse_schema(term, serps):
         if url is None or rank is None:
             continue
 
-        domain = url_to_domain(url)
+        url_bone = get_url_bone(url)
+        tld_extract_result = tldextract.extract(url)
+        domain = f'{tld_extract_result.domain}.{tld_extract_result.suffix}'
+        subdomain = tld_extract_result.subdomain if tld_extract_result.subdomain and tld_extract_result.subdomain != 'www' else None
 
         volume = fake.pyint(min_value=10, max_value=50000000, step=10)
         cpc = round(random.uniform(0, 10), 2)
+        competition = round(random.uniform(0, 1), 6)
+        category_strings = [fake.sentence(nb_words=random.randint(1, 3)) for i in range(1, 10)]
+        mm_difficulty = round(random.uniform(0, 2), 9)
+        traffic = round(random.uniform(0, 10000000000), 9)
+        traffic_pct = round(random.uniform(0, 1), 6)
+        serp_features = random.sample(SERP_FEATURES, random.randint(0, len(SERP_FEATURES)))
+        results_count = int(random.uniform(100, 10000000000))
 
-        data.append(
-            {
-                "domain": domain,
-                "date": date,
-                "term": term,
-                "url": url,
-                "rank": rank,
-                "volume": volume,
-                "cpc": cpc,
-            }
+        ranking = Ranking(
+            domain=domain,
+            subdomain=subdomain,
+            date=date,
+            url_bone=url_bone,
+            url=url,
+            term=term,
+            rank=rank,
+            volume=volume,
+            cpc=cpc,
+            competition=competition,
+            category_strings=category_strings,
+            mm_difficulty=mm_difficulty,
+            traffic=traffic,
+            traffic_pct=traffic_pct,
+            serp_features=serp_features,
+            results_count=results_count,
         )
+
+        data.append(dataclasses.asdict(ranking))
 
     return data
 

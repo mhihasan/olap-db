@@ -8,3 +8,4 @@ historical_serps_data
 SQLAlchemy==1.4.46
 serp_vault==5.0.27
 python-dotenv
+tldextract
