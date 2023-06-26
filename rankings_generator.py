@@ -298,9 +298,9 @@ def cli():
 
     args = parser.parse_args()
     t1 = time.perf_counter()
-    generate_rankings_data2(
+    asyncio.run(generate_rankings_data2(
         locale=args.locale, page_no=args.page_no, page_size=args.page_size
-    )
+    ))
     log(f"Finished in {time.perf_counter() - t1} seconds")
 
 
