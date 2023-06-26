@@ -262,7 +262,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
 
         for chunk in _chunkify(topics, SERP_FETCHING_CONCURRENCY):
             response = asyncio.run(get_serps(chunk, locale))
-            log(f"Found SERPs for {len(response.keys)} topics")
+            log(f"Found SERPs for {len(response.keys())} topics")
 
             for topic, serps in response.items():
                 data = rankings_to_clickhouse_schema(topic, serps)
