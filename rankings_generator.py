@@ -251,7 +251,7 @@ async def get_serps(terms, locale):
         return {}
 
 
-def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
+async def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
     while True:
         topics = fetch_tracked_topics(locale, page_no, page_size)
         log(f"topics fetched {len(topics)}")
@@ -261,7 +261,7 @@ def generate_rankings_data2(locale, page_no=1, page_size=DEFAULT_PAGE_SIZE):
         rankings_data = []
 
         for chunk in _chunkify(topics, SERP_FETCHING_CONCURRENCY):
-            response = asyncio.run(get_serps(chunk, locale))
+            response = await get_serps(chunk, locale)
             log(f"Found SERPs for {len(response.keys())} topics")
 
             for topic, serps in response.items():
