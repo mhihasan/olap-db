@@ -24,7 +24,7 @@ aioboto3_session = aioboto3.Session()
 
 POINT_IN_TIME_TIMESTAMP = datetime.utcnow().timestamp() - 86400 * 30 * 3
 BUCKET_NAME = 'zappa-marketmuse-admin-prod'
-DEFAULT_PAGE_SIZE = 5000000
+DEFAULT_PAGE_SIZE = 500
 CHUNK_SIZE = 100
 
 
@@ -54,8 +54,11 @@ async def upload_csv_data_to_s3(bucket_name, key, list_of_dicts):
     async with aioboto3_session.resource('s3') as s3_resource:
         bucket = await s3_resource.Bucket(bucket_name)
         csv_data = convert_list_of_dicts_to_csv(list_of_dicts)
-        await bucket.put_object(Key=key, Body=csv_data.encode())
 
+        try:
+            await bucket.put_object(Key=key, Body=csv_data.encode())
+        except Exception as e:
+            log(f'Error uploading data to s3: {e}')
 
 def _chunkify(arr, n):
     return [arr[i : i + n] for i in range(0, len(arr), n)]
@@ -71,27 +74,30 @@ SERP_INDEX_TABLES = {
 
 
 async def get_index(table, topic):
-    response = await table.get_item(Key={'topic': topic}, AttributesToGet=['historical_serp_data'])
-    return [{'serp_rankings': r['serp_rankings']} for r in  response.get('Item', {}).get('historical_serp_data', []) if int(r['timestamp']) > POINT_IN_TIME_TIMESTAMP and r.get('serp_rankings')]
+    try:
+        response = await table.get_item(Key={'topic': topic}, AttributesToGet=['historical_serp_data'])
+        return [{'serp_rankings': r['serp_rankings']} for r in  response.get('Item', {}).get('historical_serp_data', []) if int(r['timestamp']) > POINT_IN_TIME_TIMESTAMP and r.get('serp_rankings')]
+    except Exception as e:
+        log(f'Error getting index for {topic}: {e}')
+        return []
 
 
-async def get_s3_ranking_keys(locale, topics):
+async def get_s3_ranking_keys(locale, topics, page_no):
     keys_collected = 0
     total_topics = len(topics)
     t_start = time.perf_counter()
     async with aioboto3_session.resource('dynamodb', region_name='us-east-1') as dynamo_resource:
         table = await dynamo_resource.Table(SERP_INDEX_TABLES[locale])
-        results = []
-        for chunk in _chunkify(topics, CHUNK_SIZE):
+        for chunk_no, chunk in enumerate(_chunkify(topics, CHUNK_SIZE)):
             result = await asyncio.gather(*[get_index(table, topic) for topic in chunk])
             keys_collected += len(result)
 
-            results.append(result)
+            await upload_csv_data_to_s3(bucket_name=BUCKET_NAME,
+                                        key=f'{locale}/{page_no}/{chunk_no}/{str(uuid.uuid4())}.csv',
+                                        list_of_dicts=list(itertools.chain.from_iterable(result)))
 
             t_end = time.perf_counter()
-            log(f'Collected {keys_collected} keys: {round(keys_collected * 100/total_topics, 2)}% in {round(t_end - t_start, 2)} seconds')
-
-    return list(itertools.chain.from_iterable(result))
+            log(f'Collected {keys_collected} keys: {round(keys_collected * 100 / total_topics, 2)}% in {round(t_end - t_start, 2)} seconds')
 
 
 def get_credentials(locale):
@@ -123,11 +129,8 @@ async def fetch_tracked_topics(locale, page_no, page_size):
 async def main(locale, page_no, page_size):
     topics = await fetch_tracked_topics(locale, page_no, page_size)
     log(f'Found {len(topics)} topics')
-    ranking_keys = await get_s3_ranking_keys(locale, topics)
-    log(f'Found {len(ranking_keys)} ranking keys')
-    if ranking_keys:
-        await upload_csv_data_to_s3(bucket_name=BUCKET_NAME, key=f'{locale}_{page_no}_{page_size}_{str(uuid.uuid4())[:5]}.csv', list_of_dicts=ranking_keys)
-        log(f'Uploaded ranking keys to S3')
+    await get_s3_ranking_keys(locale, topics, page_no)
+    log(f'Uploaded ranking keys to S3')
 
 
 def cli():
@@ -142,6 +145,7 @@ def cli():
     ))
 
 
+# export PYTHONUNBUFFERED=1 && nohup python s3_rankings_collector.py --locale=en-us --page_no=1 > s3_ranking_keys_en_us.log &
 if __name__ == '__main__':
     t = time.perf_counter()
     cli()
