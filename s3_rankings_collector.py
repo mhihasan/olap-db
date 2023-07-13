@@ -5,7 +5,6 @@ import itertools
 import logging
 import os
 import time
-import uuid
 from datetime import datetime
 from io import StringIO
 
@@ -76,28 +75,29 @@ SERP_INDEX_TABLES = {
 async def get_index(table, topic):
     try:
         response = await table.get_item(Key={'topic': topic}, AttributesToGet=['historical_serp_data'])
-        return [{'serp_rankings': r['serp_rankings']} for r in  response.get('Item', {}).get('historical_serp_data', []) if int(r['timestamp']) > POINT_IN_TIME_TIMESTAMP and r.get('serp_rankings')]
+        s3_keys = [{'serp_rankings': r['serp_rankings']} for r in  response.get('Item', {}).get('historical_serp_data', []) if int(r['timestamp']) > POINT_IN_TIME_TIMESTAMP and r.get('serp_rankings')]
+        return s3_keys[:3]
     except Exception as e:
         log(f'Error getting index for {topic}: {e}')
         return []
 
 
 async def get_s3_ranking_keys(locale, topics, page_no):
-    keys_collected = 0
+    topics_processed = 0
     total_topics = len(topics)
     t_start = time.perf_counter()
     async with aioboto3_session.resource('dynamodb', region_name='us-east-1') as dynamo_resource:
         table = await dynamo_resource.Table(SERP_INDEX_TABLES[locale])
         for chunk_no, chunk in enumerate(_chunkify(topics, CHUNK_SIZE)):
             result = await asyncio.gather(*[get_index(table, topic) for topic in chunk])
-            keys_collected += len(result)
+            topics_processed += CHUNK_SIZE
 
             await upload_csv_data_to_s3(bucket_name=BUCKET_NAME,
-                                        key=f'{locale}/{page_no}/{chunk_no}/{str(uuid.uuid4())}.csv',
+                                        key=f'{locale}/{page_no}/{chunk_no}.csv',
                                         list_of_dicts=list(itertools.chain.from_iterable(result)))
 
             t_end = time.perf_counter()
-            log(f'Collected {keys_collected} keys: {round(keys_collected * 100 / total_topics, 2)}% in {round(t_end - t_start, 2)} seconds')
+            log(f'Processed {topics_processed} topics : {round(topics_processed * 100 / total_topics * 2, 2)}% in {round(t_end - t_start, 2)} seconds')
 
 
 def get_credentials(locale):
@@ -145,7 +145,7 @@ def cli():
     ))
 
 
-# export PYTHONUNBUFFERED=1 && nohup python s3_rankings_collector.py --locale=en-us --page_no=1 > s3_ranking_keys_en_us.log &
+# export PYTHONUNBUFFERED=1 && nohup python s3_rankings_collector.py --locale=en-us --page_no=2 > s3_ranking_keys_en_us.log &
 if __name__ == '__main__':
     t = time.perf_counter()
     cli()
