@@ -86,9 +86,10 @@ async def get_s3_ranking_keys(locale, topics, page_no):
     topics_processed = 0
     total_topics = len(topics)
     t_start = time.perf_counter()
-    async with aioboto3_session.resource('dynamodb', region_name='us-east-1') as dynamo_resource:
-        table = await dynamo_resource.Table(SERP_INDEX_TABLES[locale])
-        for chunk_no, chunk in enumerate(_chunkify(topics, CHUNK_SIZE)):
+
+    for chunk_no, chunk in enumerate(_chunkify(topics, CHUNK_SIZE)):
+        async with aioboto3_session.resource('dynamodb', region_name='us-east-1') as dynamo_resource:
+            table = await dynamo_resource.Table(SERP_INDEX_TABLES[locale])
             result = await asyncio.gather(*[get_index(table, topic) for topic in chunk])
             topics_processed += CHUNK_SIZE
 
