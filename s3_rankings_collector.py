@@ -24,8 +24,8 @@ aioboto3_session = aioboto3.Session()
 
 POINT_IN_TIME_TIMESTAMP = datetime.utcnow().timestamp() - 86400 * 30 * 3
 BUCKET_NAME = 'zappa-marketmuse-admin-prod'
-DEFAULT_PAGE_SIZE = 500
-CHUNK_SIZE = 100
+DEFAULT_PAGE_SIZE = os.getenv('DEFAULT_PAGE_SIZE', 50000000)
+CHUNK_SIZE = os.getenv('CHUNK_SIZE', 1000)
 
 
 def log(*message):
