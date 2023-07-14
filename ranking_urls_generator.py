@@ -13,7 +13,6 @@ from io import StringIO
 from typing import List
 
 import aioboto3
-import asyncpg
 import tldextract
 from dotenv import load_dotenv
 from faker import Faker
