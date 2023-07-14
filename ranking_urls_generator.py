@@ -229,12 +229,16 @@ async def collect_rankings_from_chunk(bucket_name, locale, page_no, chunk_index,
 
 
 async def collect_rankings(bucket_name, locale, page_no):
-    coros = []
-    for i, chunk in enumerate(_chunkify(range(DEFAULT_PAGE_SIZE // CHUNK_SIZE), NUM_FILES_IN_A_CHUNK)):
-        coros.append(collect_rankings_from_chunk(
-            bucket_name=bucket_name, locale=locale, page_no=page_no, chunk_index=i, chunk=chunk)
+    files_generated = 0
+    total_files = DEFAULT_PAGE_SIZE // CHUNK_SIZE
+    files = range(total_files)
+    t = time.perf_counter()
+    for i, chunk in enumerate(_chunkify(files, NUM_FILES_IN_A_CHUNK)):
+        await collect_rankings_from_chunk(
+            bucket_name=bucket_name, locale=locale, page_no=page_no, chunk_index=i, chunk=chunk
         )
-    await asyncio.gather(*coros)
+        files_generated += 1
+        log(f'Generated {files_generated} out of {total_files} files: {round(files_generated/total_files, 2)}%, {round(time.perf_counter() - t, 2)} seconds elapsed.')
 
 
 async def main(locale, page_no):
