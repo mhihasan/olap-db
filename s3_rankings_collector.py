@@ -10,11 +10,23 @@ from io import StringIO
 
 import aioboto3
 import asyncpg
+import sentry_sdk
 from dotenv import load_dotenv
-
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
+
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,  # Capture info and above as breadcrumbs
+    event_level=logging.ERROR  # Send errors as events
+)
+sentry_sdk.init(
+    dsn=os.getenv('SENTRY_DSN', 'https://88125568e9f7416c8be655f47eed151e@o10787.ingest.sentry.io/1890285'),
+    integrations=[sentry_logging, ],
+    environment=os.environ.get('ENVIRONMENT', 'prod')
+)
+sentry_sdk.set_tag('script', 's3_rankings_collector')
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

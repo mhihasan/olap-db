@@ -13,14 +13,28 @@ from io import StringIO
 from typing import List
 
 import aioboto3
+import sentry_sdk
 import tldextract
 from dotenv import load_dotenv
 from faker import Faker
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 fake = Faker()
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
+
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,  # Capture info and above as breadcrumbs
+    event_level=logging.ERROR  # Send errors as events
+)
+sentry_sdk.init(
+    dsn=os.getenv('SENTRY_DSN', 'https://88125568e9f7416c8be655f47eed151e@o10787.ingest.sentry.io/1890285'),
+    integrations=[sentry_logging, ],
+    environment=os.environ.get('ENVIRONMENT', 'prod')
+)
+sentry_sdk.set_tag('script', 'ranking_urls_generator')
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -201,6 +215,7 @@ async def fetch_singe_rankings(bucket, s3_key):
     obj = await bucket.Object(s3_key)
     resp = await obj.get()
     data = (await resp['Body'].read()).decode('utf-8')
+
     json_data = json.loads(data)
     term = s3_key.split("_")[0]
     timestamp = int(s3_key.split("_")[-1])
@@ -228,13 +243,16 @@ async def collect_rankings_from_chunk(bucket_name, locale, page_no, chunk_index,
     )
 
 
-async def collect_rankings(bucket_name, locale, page_no):
+async def collect_rankings(bucket_name, locale, page_no, start_chunk_no=0):
     files_generated = 0
     total_files = DEFAULT_PAGE_SIZE // CHUNK_SIZE
     files = range(total_files)
     total_files_to_be_generated = len(files) // NUM_FILES_IN_A_CHUNK
     t = time.perf_counter()
     for i, chunk in enumerate(_chunkify(files, NUM_FILES_IN_A_CHUNK)):
+        if i < start_chunk_no:
+            continue
+
         await collect_rankings_from_chunk(
             bucket_name=bucket_name, locale=locale, page_no=page_no, chunk_index=i, chunk=chunk
         )
