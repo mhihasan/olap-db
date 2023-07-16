@@ -235,7 +235,13 @@ async def fetch_rankings(s3_keys):
 async def collect_rankings_from_chunk(bucket_name, locale, page_no, chunk_index, chunk):
     keys = [f'{locale}/{page_no}/{i}.csv' for i in chunk]
     s3_keys = await get_ranking_keys_in_batch(bucket_name, keys)
+    if not s3_keys:
+        return
+
     rankings = await fetch_rankings(s3_keys)
+    if not rankings:
+        return
+
     await upload_csv_data_to_s3(
         bucket_name,
         key=f'ranking_urls/{locale}/{page_no}/{chunk_index}.csv',
@@ -275,7 +281,7 @@ def cli():
         locale=args.locale, page_no=args.page_no, start_chunk_no=args.start_chunk_no
     ))
 
-# export PYTHONUNBUFFERED=1 && nohup python ranking_urls_generator.py --locale=en-us --page_no=1 --start_chunk_no=0> ranking_urls_generator_en_us_1.log &
+# export PYTHONUNBUFFERED=1 && nohup python ranking_urls_generator.py --locale=en-us --start_chunk_no=100 --page_no=2> ranking_urls_generator_en_us_2.log &
 
 
 if __name__ == '__main__':
