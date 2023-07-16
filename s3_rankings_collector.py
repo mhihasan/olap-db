@@ -94,23 +94,32 @@ async def get_index(table, topic):
         return []
 
 
+async def get_indices(topics, locale):
+    async with aioboto3_session.resource('dynamodb', region_name='us-east-1') as dynamo_resource:
+        table = await dynamo_resource.Table(SERP_INDEX_TABLES[locale])
+        result = await asyncio.gather(*[get_index(table, topic) for topic in topics])
+        return list(itertools.chain.from_iterable(result))
+
+
 async def get_s3_ranking_keys(locale, topics, page_no):
     topics_processed = 0
     total_topics = len(topics)
     t_start = time.perf_counter()
 
     for chunk_no, chunk in enumerate(_chunkify(topics, CHUNK_SIZE)):
-        async with aioboto3_session.resource('dynamodb', region_name='us-east-1') as dynamo_resource:
-            table = await dynamo_resource.Table(SERP_INDEX_TABLES[locale])
-            result = await asyncio.gather(*[get_index(table, topic) for topic in chunk])
-            topics_processed += CHUNK_SIZE
+        indices = await get_indices(chunk, locale)
 
-            await upload_csv_data_to_s3(bucket_name=BUCKET_NAME,
-                                        key=f'{locale}/{page_no}/{chunk_no}.csv',
-                                        list_of_dicts=list(itertools.chain.from_iterable(result)))
+        if not indices:
+            log(f'No indices found for {chunk}')
+            continue
 
-            t_end = time.perf_counter()
-            log(f'Processed {topics_processed} topics : {round(topics_processed * 100 / total_topics * 2, 2)}% in {round(t_end - t_start, 2)} seconds')
+        await upload_csv_data_to_s3(bucket_name=BUCKET_NAME,
+                                    key=f'{locale}/{page_no}/{chunk_no}.csv',
+                                    list_of_dicts=indices)
+        topics_processed += CHUNK_SIZE
+
+        t_end = time.perf_counter()
+        log(f'Processed {topics_processed} topics : {round(topics_processed * 100 / total_topics * 2, 2)}% in {round(t_end - t_start, 2)} seconds')
 
 
 def get_credentials(locale):
