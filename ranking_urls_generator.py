@@ -260,21 +260,22 @@ async def collect_rankings(bucket_name, locale, page_no, start_chunk_no=0):
         log(f'Generated {files_generated} out of {total_files_to_be_generated} files: {round(files_generated/total_files, 2)}%, {round(time.perf_counter() - t, 2)} seconds elapsed.')
 
 
-async def main(locale, page_no):
-    await collect_rankings(BUCKET_NAME, locale, page_no)
+async def main(locale, page_no, start_chunk_no):
+    await collect_rankings(BUCKET_NAME, locale, page_no, start_chunk_no)
 
 
 def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument("--locale", type=str, required=True)
     parser.add_argument("--page_no", type=int, default=1)
+    parser.add_argument("--start_chunk_no", type=int, default=0)
 
     args = parser.parse_args()
     asyncio.run(main(
-        locale=args.locale, page_no=args.page_no
+        locale=args.locale, page_no=args.page_no, start_chunk_no=args.start_chunk_no
     ))
 
-# export PYTHONUNBUFFERED=1 && nohup python ranking_urls_generator.py --locale=en-us --page_no=1 > ranking_urls_generator_en_us_1.log &
+# export PYTHONUNBUFFERED=1 && nohup python ranking_urls_generator.py --locale=en-us --page_no=1 --start_chunk_no=0> ranking_urls_generator_en_us_1.log &
 
 
 if __name__ == '__main__':
