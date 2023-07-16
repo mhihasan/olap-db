@@ -66,10 +66,8 @@ async def upload_csv_data_to_s3(bucket_name, key, list_of_dicts):
         bucket = await s3_resource.Bucket(bucket_name)
         csv_data = convert_list_of_dicts_to_csv(list_of_dicts)
 
-        try:
-            await bucket.put_object(Key=key, Body=csv_data.encode())
-        except Exception as e:
-            log(f'Error uploading data to s3: {e}')
+        await bucket.put_object(Key=key, Body=csv_data.encode())
+
 
 def _chunkify(arr, n):
     return [arr[i : i + n] for i in range(0, len(arr), n)]
@@ -85,13 +83,9 @@ SERP_INDEX_TABLES = {
 
 
 async def get_index(table, topic):
-    try:
-        response = await table.get_item(Key={'topic': topic}, AttributesToGet=['historical_serp_data'])
-        s3_keys = [{'serp_rankings': r['serp_rankings']} for r in  response.get('Item', {}).get('historical_serp_data', []) if int(r['timestamp']) > POINT_IN_TIME_TIMESTAMP and r.get('serp_rankings')]
-        return s3_keys[:3]
-    except Exception as e:
-        log(f'Error getting index for {topic}: {e}')
-        return []
+    response = await table.get_item(Key={'topic': topic}, AttributesToGet=['historical_serp_data'])
+    s3_keys = [{'serp_rankings': r['serp_rankings']} for r in response.get('Item', {}).get('historical_serp_data', []) if int(r['timestamp']) > POINT_IN_TIME_TIMESTAMP and r.get('serp_rankings')]
+    return s3_keys[:3]
 
 
 async def get_indices(topics, locale):
@@ -110,7 +104,7 @@ async def get_s3_ranking_keys(locale, topics, page_no):
         indices = await get_indices(chunk, locale)
 
         if not indices:
-            log(f'No indices found for {chunk}')
+            log(f'No indices found for {locale}/{page_no}/{chunk_no}.csv')
             continue
 
         await upload_csv_data_to_s3(bucket_name=BUCKET_NAME,

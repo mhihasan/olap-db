@@ -69,10 +69,7 @@ async def upload_csv_data_to_s3(bucket_name, key, list_of_dicts):
         bucket = await s3_resource.Bucket(bucket_name)
         csv_data = convert_list_of_dicts_to_csv(list_of_dicts)
 
-        try:
-            await bucket.put_object(Key=key, Body=csv_data.encode())
-        except Exception as e:
-            log(f'Error uploading data to s3: {e}')
+        await bucket.put_object(Key=key, Body=csv_data.encode())
 
 
 SERP_FEATURES = (
