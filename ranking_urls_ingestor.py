@@ -46,6 +46,7 @@ def log(*message):
 
 def download_csv_from_s3(locale, page_no, chunk_no):
     df = pd.read_csv(f's3://{BUCKET_NAME}/ranking_urls/{locale}/{page_no}/{chunk_no}.csv')
+    log(f'Total rows in {locale}/{page_no}/{chunk_no}.csv: {len(df)}')
     df['date'] = pd.to_datetime(df['date'])
     for col in ['category_strings', 'serp_features']:
         df[col] = df[col].apply(ast.literal_eval)
@@ -85,10 +86,10 @@ def ingest(kwargs):
 
     log(f'Ingesting {locale}/{page_no}/{chunk_no}.csv')
     t1 = time.time()
-    # df = download_csv_from_s3(locale, page_no, chunk_no)
+    df = download_csv_from_s3(locale, page_no, chunk_no)
     log(f'Downloaded {locale}/{page_no}/{chunk_no}.csv in {time.time() - t1} seconds')
     t2 = time.time()
-    # ingest_df(df)
+    ingest_df(df)
     log(f'Inserted {locale}/{page_no}/{chunk_no}.csv in {time.time() - t2} seconds')
 
     flag_db.create(locale, page_no, chunk_no)
@@ -130,7 +131,7 @@ def ingest_ranking_urls(locale, page_no, start_chunk_no=0):
     total_files = DEFAULT_PAGE_SIZE // CHUNK_SIZE
     files = range(total_files)
     total_files_to_be_ingested = len(files) // NUM_FILES_IN_A_CHUNK
-    params = [{"locale": locale, "page_no": page_no, "chunk_no": chunk_no} for chunk_no in range(total_files_to_be_ingested) if chunk_no > start_chunk_no]
+    params = [{"locale": locale, "page_no": page_no, "chunk_no": chunk_no} for chunk_no in range(total_files_to_be_ingested+1) if chunk_no > start_chunk_no]
     run_concurrent_process(ingest, params, max_concurrency=10)
 
 
@@ -145,10 +146,12 @@ def cli():
     ingest_ranking_urls(args.locale, args.page_no, args.start_chunk_no)
 
 
-# export PYTHONUNBUFFERED=1 && nohup python ranking_urls_ingestor.py --locale=en-us --start_chunk_no=0 --page_no=1> ranking_urls_ingestor_en_us_1.log &
+# export PYTHONUNBUFFERED=1 && nohup python ranking_urls_ingestor.py --locale=en-us --start_chunk_no=0 --page_no=1 > ranking_urls_ingestor_en_us_1.log &
 
 
 if __name__ == '__main__':
     t = time.perf_counter()
     cli()
+    # ingest_ranking_urls('en-us', 1, 0)
     log(f'Elapsed in {time.perf_counter() - t} seconds')
+
