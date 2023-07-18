@@ -277,6 +277,7 @@ def cli():
     asyncio.run(main(
         locale=args.locale, page_no=args.page_no, start_chunk_no=args.start_chunk_no
     ))
+    logger.error(f'Generated {args.locale}/{args.page_no}/', exc_info=True)
 
 # export PYTHONUNBUFFERED=1 && nohup python ranking_urls_generator.py --locale=en-us --start_chunk_no=100 --page_no=2> ranking_urls_generator_en_us_2.log &
 

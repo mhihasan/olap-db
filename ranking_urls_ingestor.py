@@ -144,6 +144,7 @@ def cli():
     args = parser.parse_args()
 
     ingest_ranking_urls(args.locale, args.page_no, args.start_chunk_no)
+    logger.error(f'Ingested {args.locale}/{args.page_no}/', exc_info=True)
 
 
 # export PYTHONUNBUFFERED=1 && nohup python ranking_urls_ingestor.py --locale=en-us --start_chunk_no=0 --page_no=1 > ranking_urls_ingestor_en_us_1.log &
@@ -153,5 +154,6 @@ if __name__ == '__main__':
     t = time.perf_counter()
     cli()
     # ingest_ranking_urls('en-us', 1, 0)
+
     log(f'Elapsed in {time.perf_counter() - t} seconds')
 
