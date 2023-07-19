@@ -45,7 +45,12 @@ def log(*message):
 
 
 def download_csv_from_s3(locale, page_no, chunk_no):
-    df = pd.read_csv(f's3://{BUCKET_NAME}/ranking_urls/{locale}/{page_no}/{chunk_no}.csv')
+    try:
+        df = pd.read_csv(f's3://{BUCKET_NAME}/ranking_urls/{locale}/{page_no}/{chunk_no}.csv')
+    except Exception as e:
+        log(str(e))
+        return None
+
     log(f'Total rows in {locale}/{page_no}/{chunk_no}.csv: {len(df)}')
     df['date'] = pd.to_datetime(df['date'])
     for col in ['category_strings', 'serp_features']:
@@ -87,6 +92,8 @@ def ingest(kwargs):
     log(f'Ingesting {locale}/{page_no}/{chunk_no}.csv')
     t1 = time.time()
     df = download_csv_from_s3(locale, page_no, chunk_no)
+    if df is None:
+        return
     log(f'Downloaded {locale}/{page_no}/{chunk_no}.csv in {time.time() - t1} seconds')
     t2 = time.time()
     ingest_df(df)
