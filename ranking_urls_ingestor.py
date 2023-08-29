@@ -59,7 +59,14 @@ def download_csv_from_s3(locale, page_no, chunk_no):
 
 
 def ingest_df(ranking_urls_df):
-    with Client(host='154.27.75.107', settings={'use_numpy': True}) as client:
+    regular_credentials = {
+        'host': '38.130.229.181',
+        'database': 'content_inventory',
+        'user': 'content_inventory_user',
+        'password': 'AB0przbfN97cosoriuHrKZ2',
+        'settings': {'use_numpy': True}
+    }
+    with Client(**regular_credentials) as client:
         client.insert_dataframe(
             query='INSERT INTO content_inventory.ranking_urls VALUES',
             dataframe=ranking_urls_df,

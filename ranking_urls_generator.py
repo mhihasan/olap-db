@@ -287,4 +287,3 @@ if __name__ == '__main__':
     cli()
     elapsed = time.perf_counter() - t
     log(f'executed in {elapsed:0.2f} seconds.')
-
