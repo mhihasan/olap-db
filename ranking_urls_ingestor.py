@@ -53,8 +53,13 @@ def download_csv_from_s3(locale, page_no, chunk_no):
 
     log(f'Total rows in {locale}/{page_no}/{chunk_no}.csv: {len(df)}')
     df['date'] = pd.to_datetime(df['date'])
+
+    # Extract url_prefix any of ("https://www.", "https://", "http://www.", "http://",) from url
+    df['url_prefix'] = df['url'].str.extract(r'(https?:\/\/(?:www\.)?)')
+    del df['url']
     for col in ['category_strings', 'serp_features']:
         df[col] = df[col].apply(ast.literal_eval)
+
     return df
 
 
