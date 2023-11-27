@@ -3,16 +3,16 @@ import os
 from clickhouse_driver import Client as ClickhouseClient
 
 regular_credentials = {
-    'host': '38.130.229.181',
+    'host': '38.130.229.*',
     'database': 'content_inventory',
     'user': 'content_inventory_user',
-    'password': 'AB0przbfN97cosoriuHrKZ2'
+    'password': ''
 }
 
 default_credentials = {
-    'host': '38.130.229.181',
+    'host': '38.130.229.*',
     # 'port': 9000,
-    'password': 'xr0przbfN97cosoriuHrKZ2',
+    'password': '',
     "database": "content_inventory"
 }
 
