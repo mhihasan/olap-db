@@ -10,7 +10,7 @@ os.environ['AWS_PROFILE'] = 'mm'
 # print(client.execute('SHOW DATABASES'))
 # import clickhouse_connect
 
-client = clickhouse_connect.get_client(host='154.27.75.107', username='default', port=8123)
+client = clickhouse_connect.get_client(host='154.27.75.*', username='default', port=8123)
 
 DATABASE_NAME = 'content_inventory'
 TABLE_NAME = 'ranking_urls'
